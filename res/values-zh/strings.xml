@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">原文编辑器</string>
+    
+    <string name="menu">菜单</string>
+    <string name="context_menu_0">新文件</string>
+    <string name="context_menu_1">读</string>
+    <string name="context_menu_2">写</string>
+    <string name="context_menu_3">大小变更</string>
+    <string name="context_menu_4">最大化/以前大小</string>
+    <string name="context_menu_5">开资源管理器</string>
+    <string name="context_menu_6">arrow key</string>
+    <string name="context_menu_7">面对面目录</string>
+    <string name="context_menu_8">终止目录</string>
+    
+    <string name="about_program">機能:\n - 原文编辑器\n - Java editor\n - java syntax analyzer\n - terminal emulator\n - 资源管理器\n - 電送(Wifi)\n - 媒体 播放器\n - 录音机\n - high performance\n - low memory\n - bluetooth keyboard(hangul input:%h)\n\nProgrammed by Kim Ji Yun\nmade in world</string>
+    
+    
+    
+    
+    
+    <string name="OK">確認</string>
+    <string name="cancel">取消</string>
+    
+    <string name="color_dialog">色相</string>
+    <string name="connect_file_dialog">Ip住所入力</string>
+    <string name="file_explorer_dialog">资源管理器</string>
+    <string name="font_size_dialog">字体大小</string>
+    <string name="lang_dialog">言語</string>
+    <string name="message_dialog">口信</string>
+    
+    <string name="font_default">基本</string>
+    <string name="font_others">其他</string>
+        
+    <string name="file_dir_app">向App目录</string>
+    <string name="file_dir_root">向根目录</string>
+    
+	<string name="file_func_mkdir">打造目录</string>
+	<string name="file_func_del">削除</string>
+	<string name="file_func_ren">變更名字</string>
+	<string name="file_func_cut">剪切</string>
+	<string name="file_func_copy">複寫</string>
+	<string name="file_func_paste"> 贴</string>
+	<string name="file_func_multiselect">多衆選擇</string>
+	<string name="file_func_sort">整列</string>
+	<string name="file_func_properties">屬性</string>
+		
+	<string name="file_media_send">发送文件</string>
+	<string name="file_media_receiver">收文件</string>
+	<string name="file_media_music">听音乐</string>
+	<string name="file_media_video">看视频</string>
+	<string name="file_media_record">录音声音</string>
+	<string name="file_media_play_record">再生录音</string>
+	<string name="file_media_sound_menu">声音管理菜单</string>
+		
+	<string name="file_sort_name_ascend">名字,递增排序 整列</string>
+	<string name="file_sort_name_descend">名字,降幂顺序 整列</string>
+	<string name="file_sort_time_ascend">时间,递增排序  整列</string>
+	<string name="file_sort_time_descend">时间,降幂顺序 整列</string>
+	
+	<string name="file_but_dir">Dir</string>
+	<string name="file_but_category">种类</string>
+	<string name="file_but_func">机能</string>
+	<string name="file_but_media">媒体</string>
+	
+	<string name="lang_chinese">汉字</string>
+    
+    <string name="load_error">读 误差</string>
+    <string name="save_error">写 误差</string>
+    <string name="save_error_read_only">read-only system</string>
+    <string name="load_error_file_not_found">file not found</string>
+    <string name="outof_memory_error">存储器 不足 误差</string>
+    <string name="error">误差 发生</string>
+    
+    <string name="keys_keys">字盘</string>
+    <string name="keys_exc">实行</string>
+    <string name="keys_lang">语言</string>
+    
+    
+        
+
+</resources>

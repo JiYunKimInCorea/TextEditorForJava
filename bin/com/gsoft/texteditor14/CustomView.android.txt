@@ -1,0 +1,2119 @@
+package com.gsoft.texteditor14;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.Paint.Style;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.View;
+
+import com.gsoft.common.Compiler.CodeString;
+import com.gsoft.common.Compiler.Language;
+import com.gsoft.common.IO.FileHelper;
+import com.gsoft.common.IO.TextFormat;
+import com.gsoft.common.Media.MediaPlayerDel.PlayListAndCurSongInfo;
+import com.gsoft.common.Notification;
+import com.gsoft.common.PowerManagement;
+import com.gsoft.common.ColorEx;
+import com.gsoft.common.IO;
+import com.gsoft.common.Sizing.RectangleF;
+import com.gsoft.common.Sizing.Size;
+import com.gsoft.common.Sizing.SizeF;
+import com.gsoft.common.Terminal;
+import com.gsoft.common.Util.ArrayListString;
+import com.gsoft.common.Util.ControlStack;
+import com.gsoft.common.Util.Date;
+import com.gsoft.common.gui.Control;
+import com.gsoft.common.gui.EditRichText;
+import com.gsoft.common.gui.EditText;
+import com.gsoft.common.gui.FileDialog;
+import com.gsoft.common.gui.IntegrationKeyboard;
+import com.gsoft.common.gui.LoggingScrollable;
+import com.gsoft.common.gui.MessageDialog;
+import com.gsoft.common.gui.SettingsDialog;
+import com.gsoft.common.gui.SizingBorder;
+import com.gsoft.common.gui.ViewEx;
+import com.gsoft.common.gui.Buttons.Button;
+import com.gsoft.common.gui.EditRichText.TextLine;
+import com.gsoft.common.gui.IntegrationKeyboard.HardwareKeyboard;
+import com.gsoft.common.gui.IntegrationKeyboard.Mode;
+import com.gsoft.common.gui.Menu.MenuType;
+import com.gsoft.common.gui.SettingsDialog.Settings;
+import com.gsoft.common.Encoding.EncodingFormatException;
+import com.gsoft.texteditor14.R;
+import com.gsoft.texteditor14.R.string;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+public class CustomView extends ViewEx 
+	implements 	com.gsoft.common.interfaces.OnTouchListener
+{	
+	long handlingTimeOfTouch;
+	long time1OfTouch;
+	long time2OfTouch;
+	boolean isSaved;
+	
+	
+	
+	class CustomView1_OnTouchListener implements OnTouchListener {
+		long oldActionTime;
+		boolean isClicked;
+		CustomView owner;
+		Point oldMovePoint;
+				
+		public CustomView1_OnTouchListener(CustomView owner) {
+			this.owner = owner;			
+		}
+		
+		
+		public boolean onTouch(View v, MotionEvent event) {
+			//Control.modified = true;
+			isSaved = false;
+			int actionCode = event.getAction();
+			int myActionCode = 0;
+			if (actionCode==MotionEvent.ACTION_MOVE) {
+				myActionCode = com.gsoft.common.Events.MotionEvent.ActionMove;
+			}
+			else if (actionCode==MotionEvent.ACTION_DOWN) {
+				myActionCode = com.gsoft.common.Events.MotionEvent.ActionDown;
+			}
+			else 
+				myActionCode = 0;						
+			
+			try {
+				if (myActionCode==com.gsoft.common.Events.MotionEvent.ActionDown) {
+					com.gsoft.common.Events.MotionEvent myEvent = 
+							new com.gsoft.common.Events.MotionEvent(myActionCode, (int)event.getX(), (int)event.getY());
+					oldMovePoint = new Point(myEvent.x,myEvent.y);
+					if (!sized) return false;
+					
+					boolean r=false;	
+					int i;
+					ControlStack controlStack = Control.controlStack;
+					
+					//synchronized (Control.controlStack) {
+					Control[] controls = controlStack.getItems();
+					if (controls.length>0) {
+						Control control = controls[controls.length-1];
+						if (control instanceof com.gsoft.common.gui.Dialog) {
+							if (control instanceof com.gsoft.common.gui.Dialog.EditableDialog==false) {
+								if (control.IsPointIn(oldMovePoint)==false /*&& 
+										integrationKeyboard.IsPointIn(oldMovePoint)==false*/) {
+									Control.loggingForMessageBox.setText(true, "Touch the OK or Cancel button", false);
+									Control.loggingForMessageBox.setHides(false);
+									invalidate();
+									return true;
+								}
+							}
+						}
+					}
+					for (i=controls.length-1; i>=0; i--) {
+						Control control = controls[i];
+						if (control instanceof FileDialog) {
+							int a;
+							a=0;
+							a++;
+						}
+						if (control!=null) {
+							time1OfTouch = System.currentTimeMillis();
+							if (exitTimer!=null) exitTimer.startTimer();
+							r = control.onTouch(myEvent, null);
+							if (exitTimer!=null) exitTimer.cancelTimer();
+							if (r) {							
+								break;
+							}
+						}
+					}
+					
+					if (!r) r = buttonMenu.onTouch(myEvent, null);
+					//}
+					
+					invalidate();
+										
+					/** editRichText, keyboard(내부에 editText가 있기 때문), sizingBorder는 
+					// ActionDown에 연이은 AcitionMove를 받기 위해 여기서 true를 리턴해야 한다.*/
+					return r;
+				}
+				else if (myActionCode==com.gsoft.common.Events.MotionEvent.ActionMove/* ||
+						myActionCode==com.gsoft.common.Events.MotionEvent.ActionUp*/) {
+					com.gsoft.common.Events.MotionEvent myEvent = 
+							new com.gsoft.common.Events.MotionEvent(
+							myActionCode, (int)event.getX(), (int)event.getY());					
+					
+					if (!sized) return false;
+					
+					if (event.getEventTime()-event.getDownTime()<100) return false;
+					
+					boolean r=false;
+					
+					/*int i;
+					int x, y;
+					for (i=0; i<event.getHistorySize(); i++) {
+						myEvent.x = (int) event.getHistoricalX(i);
+						myEvent.y = (int) event.getHistoricalY(i);
+						if (Control.capturedControl!=null) {
+							r = Control.capturedControl.onTouch(myEvent, null);
+							if (r) owner.invalidate();
+						}
+					}*/
+					
+					if (Control.capturedControl!=null) {
+						r = Control.capturedControl.onTouch(myEvent, null);
+						if (r) {
+							owner.invalidate();
+						}
+					}
+					
+					//owner.invalidate();
+					
+					//Control.setModified(true);
+					
+					return r;
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+			return true;
+			
+		}		
+		
+	}
+
+	
+
+	//private static final int REQUEST_ENABLE_BT = 1;
+	
+	float vertScaleOfGap = Control.vertScaleOfGap;
+	float horzScaleOfGap = Control.horzScaleOfGap;
+	
+	boolean sized = false;
+	
+	float scaleOfMenuX = 1.0f - horzScaleOfGap * 2;
+	float scaleOfMenuY = 0.055f;
+	
+	float scaleOfEditTextX = 1.0f - horzScaleOfGap * 2;
+	float scaleOfEditTextY = 0.5f;
+	
+	float scaleOfKeyboardX = Control.scaleOfKeyboardX;
+	float scaleOfKeyboardY = 1.0f - (vertScaleOfGap+scaleOfMenuY+
+			vertScaleOfGap+scaleOfEditTextY+vertScaleOfGap);
+	
+	
+	String name = "CustomView";
+	//int width;
+	//int height;
+	
+	Button buttonMenu;
+	EditRichText editRichText;
+	
+	IntegrationKeyboard integrationKeyboard;
+	
+	SizingBorder sizingBorder;
+	Paint paint = new Paint();
+	
+	ContextMenu menu;
+	
+	FileDialog fileDialog;
+	String filename;
+	
+	//FileDialog fileExplorerDialog;
+	
+	
+	
+	/** backupBounds에서 사용한다.*/
+	/*RectangleF prevSizeOfEditText;
+	RectangleF prevSizeOfKeyboard;
+	RectangleF prevSizeOfSizingBorder;*/
+	
+	
+		
+	
+	//MenuWithClosable menuBluetoothDevices = null;
+	
+	
+	
+	//byte[] dataReceived;
+	
+	// Create a BroadcastReceiver for ACTION_FOUND
+	
+
+	//BluetoothService bluetoothService;
+	
+	
+	private RectangleF boundsOfButtonMenu;
+	
+	/** EditRichText는 toolbar포함 너비 즉 editRichText.totalBounds와 같고, 
+	 * EditText는 editText.bounds와 같다.*/
+	private RectangleF boundsOfEditText;
+	private RectangleF boundsOfEditRichText;
+	private RectangleF boundsOfIntegrationKeyboard;
+	private RectangleF boundsOfMenu;
+	private RectangleF boundsOfSizingBorder;
+	private RectangleF boundsOfLoggingForMessageBox;
+	private RectangleF boundsOfLoggingForNetwork;
+	private int heightOfGap;
+	private int widthOfGap;
+	private RectangleF boundsOfFileDialog;
+	
+	/** editRichText:0, editText:1, terminal:2*/
+	int isEditRichTextOrEditText = 1;
+	
+	/*int getIsEditRichTextOrEditText_Correct() {
+		int i;
+		for (i=Control.controlStack.count-1; i>=0; i--) {
+			Control control = Control.controlStack.getItem(i);
+			if (control.iName==editRichText.iName) {
+				if (control.getHides()==false) return 0;
+			}
+			if (control.iName==editText.iName) {
+				if (control.getHides()==false) return 1;
+			}
+			if (terminal!=null && control.iName==terminal.editText.iName) {
+				if (control.getHides()==false) return 2;
+			}
+		}
+		return 1;
+	}*/
+	
+	
+	/** backupContents와 restoreContents에서 읽고 쓰는 text
+	 * savedText는 editRichText, strSavedText는 editText를 대상으로 한다.*/
+	TextLine savedText;
+	private String strSavedText;
+	
+	private EditText editText;
+	//private boolean isMaximized;
+	
+	
+	
+	
+	
+	SurfaceHolder mHolder;
+	Canvas mCanvas;
+	public synchronized void setRunning(boolean b) {
+	}
+	private Thread renderThread;
+	
+	
+	
+	//ControlInfo controlInfo;
+	
+	int refreshTime = 100;
+	private String[] mPlayList;
+	private PlayListAndCurSongInfo playListAndCurSongInfo;
+	
+	private Terminal terminal;
+	//private SettingsDialog settingsDialog;
+	private Settings settings;
+	
+	public CustomView(MainActivity activity, Context context) {
+		super(context);
+		// TODO Auto-generated constructor stub
+		setOnTouchListener(new CustomView1_OnTouchListener(this));
+		
+		Control.view = this;
+		Control.viewEx = this;
+		
+		
+		
+		//Control.canFinish = false;
+		
+			
+		/*mHolder = getHolder();
+		mHolder.addCallback(this);*/
+		
+		/*long l = 1456789012L;
+		byte[] b =IO.toBytes(l);
+		long l2 = IO.toLong(b);
+		
+		long l3 = 6456789012L;
+		byte[] b2 =IO.toBytes(l3);
+		long l4 = IO.toLong(b2);
+		
+		long l5 = 10456789012L;
+		byte[] b3 =IO.toBytes(l5);
+		long l6 = IO.toLong(b3);
+		
+		int i = 123456;
+		byte[] b4 = IO.toBytes(i);
+		int i2 = IO.toInt(b4);
+		
+		
+		char c1 = '가';
+		short code1 = (short)c1;		
+		int iCode1 = ~(code1+1);
+		byte[] buf1 = IO.toBytes(code1);
+		buf1[0] = (byte)(0xac & 0xff);
+		buf1[1] = (byte)(0x00 & 0xff);
+		String s1 = new String(buf1);
+		
+		
+		char c2 = (char)44032;
+		char[] a2 = {c2};
+		String s2 = new String(a2);
+		
+		byte[] buf3 = new byte[2];
+		buf3[0] = (byte)(0x00 & 0xff);
+		buf3[1] = (byte)(0xac & 0xff);
+		int i3 = IO.toInt(buf3);
+		char c3 = IO.toChar(buf3);
+		char[] a3 = {c3};
+		String s3 = new String(a3);*/
+		
+		
+		//byte[] buf1 = new String("가").getBytes();
+		//byte[] buf2 = new String("나").getBytes();
+		
+		/*byte[] buf3 = new String("다").getBytes();
+		byte[] buf4 = new String("라").getBytes();
+		
+		char[] indices = {128, 0x07bf, 0x0900, 0xfffd};
+		
+		int i;
+		for (i=0; i<indices.length; i++) {
+			char c = indices[i];
+			char[] cc = {c};
+		
+			String s = new String(cc);
+			byte[] buf5 = s.getBytes();
+			if (buf5.length==4) {
+				break;
+			}
+		}
+		
+		char c = 0x0900;
+		char[] cc = {c};
+	
+		String s = new String(cc);
+		byte[] buf6 = s.getBytes();
+		
+		// 1byte : 0이상 127이하
+		// 2bytes : 128이상(2바이트널)-0x07bf(Thaana) : (-,-)
+		//		(-62,-128)			(-34,-65)
+		// 3bytes : 0x0900이상(Devanagari)-0xfffd(Specials)
+		//		  (-32,-92,-128)			(-17,-65,-67)*/
+		
+		
+		
+		//Font.loadHangul(getContext());
+		
+	}
+		
+	
+	/*void doWifi2() {
+		byte[] ipAddressLocal={(byte) (192&0xff), (byte) (168&0xff), 
+				(byte)(100&0xff), (byte)(170&0xff)};
+		int port = 5556;
+		byte[] ipAddressLocal={(byte) (192&0xff), (byte) (168&0xff), 
+				(byte)(100&0xff), (byte)(170&0xff)};
+		int portLocal = 5554;
+		try {
+			setWifiState(" ip : " + ipAddressLocal[0]+"."+ipAddressLocal[1]+"."+ipAddressLocal[2]+"."+ipAddressLocal[3];
+								
+			InetAddress address = InetAddress.getByAddress(ipAddressLocal);
+			InetAddress addressLocal = InetAddress.getByAddress(ipAddressLocal);
+			Socket socket=null;
+			if (address!=null) {
+				socket = Net.createSocket(address, port);
+				//socket = Net.createSocket(address, port, null, 0);
+				Net.sendMessage(socket.getOutputStream(), "Socket Test");
+				//String msg = Net.receiveMessage(socket.getInputStream());
+				wifiState = (String) Lock.getLock(wifiState);
+				//setWifiState(" message:" + msg;
+				Lock.releaseLock(wifiState);
+				
+				if (socket!=null) {
+					socket.shutdownInput();
+					socket.shutdownOutput();
+					socket.close();
+				}
+			}
+		}catch (Exception e) {
+			setWifiState("CustomView-doWifi2"+e.toString();
+		} 
+	}*/
+	
+
+	
+	void initBounds() {
+		heightOfGap = (int)(height * vertScaleOfGap);
+		widthOfGap = (int)(width * horzScaleOfGap);
+		
+		//ScrollBars.setScrollBarScale(this);
+				
+		boundsOfButtonMenu = new RectangleF(widthOfGap, heightOfGap, 
+				width*scaleOfMenuX, height*scaleOfMenuY);
+		//if (buttonMenu!=null) buttonMenu.changeBounds(boundsOfButtonMenu);
+		
+		boundsOfEditText = new RectangleF(widthOfGap, 
+				boundsOfButtonMenu.bottom()+heightOfGap, 
+				width*scaleOfEditTextX, height*scaleOfEditTextY);
+		//if (editRichText!=null) editRichText.changeBounds(boundsOfEditText);
+		
+		boundsOfEditRichText = new RectangleF(boundsOfEditText);
+		
+		//Control.prevSizeTotalConstant = new RectangleF(boundsOfEditText); 
+						
+		boundsOfIntegrationKeyboard = new RectangleF(0, 
+				boundsOfEditText.bottom() + heightOfGap,
+				width*scaleOfKeyboardX, height*scaleOfKeyboardY);
+		//if (integrationKeyboard!=null) integrationKeyboard.changeBounds(boundsOfIntegrationKeyboard);
+			
+		
+		// ContextMenu
+		float x, y, w, h;
+		w = width * 0.7f;
+		h = height * 0.95f;
+		x = width / 2 - w / 2;
+		y = height / 2 - h / 2;
+		boundsOfMenu = new RectangleF(x, y, w, h);
+		//if (menu!=null) menu.changeBounds(boundsOfMenu);
+		
+		w = width;
+		h = boundsOfEditText.height;
+		x = 0;
+		y = boundsOfEditText.y;
+		boundsOfFileDialog = new RectangleF(x, y, w, h);
+		//if (fileDialog!=null) fileDialog.changeBounds(boundsOfFileDialog);
+		
+						
+		RectangleF boundsOfEditText2 = boundsOfEditText;
+		boundsOfSizingBorder = new RectangleF(boundsOfEditText2.x, boundsOfEditText2.bottom()+1, 
+				boundsOfEditText2.width+1, 3);
+		//boundsOfSizingBorder.height = integrationKeyboard.buttons[0].bounds.y - boundsOfSizingBorder.y;
+		//if (sizingBorder!=null) sizingBorder.changeBounds(boundsOfSizingBorder);
+			
+		
+		boundsOfLoggingForMessageBox = new RectangleF(0, 0, width*0.9f, height*0.75f);
+		boundsOfLoggingForMessageBox.x = (width-boundsOfLoggingForMessageBox.width) / 2;
+		boundsOfLoggingForMessageBox.y = (height-boundsOfLoggingForMessageBox.height) / 2;
+		
+		boundsOfLoggingForNetwork = new RectangleF(0, 0, width*0.9f, height*0.85f);
+		boundsOfLoggingForNetwork.x = (width-boundsOfLoggingForNetwork.width) / 2;
+		boundsOfLoggingForNetwork.y = height-boundsOfLoggingForNetwork.height;
+		//if (Control.loggingForNetwork!=null) Control.loggingForNetwork.changeBounds(boundsOfLoggingForNetwork);
+		
+		
+		
+		
+	}
+	
+	
+		
+	protected void initControls() throws Exception {
+		try {
+			
+		super.initControls();
+		
+		initBounds();
+		
+		int selectedColor;
+		if (settings!=null) {
+			selectedColor = settings.selectedColor[0];
+			Control.settingsDialog.setSelectedColorOfEditText(selectedColor);
+			Control.settingsDialog.setSelectedColorOfKeyboard(settings.selectedColor[1]);
+			Control.pathAndroid = settings.pathAndroid;
+			Control.settingsDialog.editTextDirectory.setText(0, new CodeString(Control.pathAndroid+"/",Color.BLACK));
+		}
+		else {
+			selectedColor = Control.settingsDialog.selectedColor[0];
+			Control.settingsDialog.setSelectedColorOfEditText(selectedColor);
+			Control.settingsDialog.setSelectedColorOfKeyboard(settings.selectedColor[1]);
+			// 디폴트로 /sdcard/android
+			Control.settingsDialog.editTextDirectory.setText(0, new CodeString(Control.pathAndroid,Color.BLACK));
+		}
+		
+		
+		int alpha = 255;
+		int colorOfButton;
+		
+		colorOfButton = ColorEx.darkerOrLighter(Color.WHITE, -30);
+		buttonMenu = new Button(this, "ButtonMenu", "Menu", 
+				colorOfButton, boundsOfButtonMenu, false, alpha, true, 0);
+		buttonMenu.setOnTouchListener(this);
+		buttonMenu.setIsOpen(true);
+		//Control.controlStack.add(buttonMenu);
+				
+		
+		colorOfButton = settings.selectedColor[1];
+		
+		
+		integrationKeyboard = new IntegrationKeyboard(this, boundsOfIntegrationKeyboard, Mode.Math, 
+				widthOfGap, heightOfGap, colorOfButton, alpha);		
+		//Control.controlStack.add(integrationKeyboard);
+		Control.keyboard = integrationKeyboard;
+		//Control.prevSizeOfKeyboardConstant = new RectangleF(boundsOfIntegrationKeyboard); 
+		
+		//controlInfo.listOfControlsInContainer.add(integrationKeyboard);
+		
+		
+		
+		String text = null/*"가나다라마바사아자차카타파하\nㄱㄴㄷㅂㅅㅇㅈㅊㅋㅌㅍㅎ"*/;
+		float fontSize = height * 0.05f;
+		
+		
+			//restoreContents()에서 읽어들인 텍스트를 설정한다.
+			editRichText = new EditRichText(this, "EditText", boundsOfEditRichText, fontSize, false, 
+					text, EditRichText.ScrollMode.Both);
+			editRichText.setBackColor(settings.selectedColor[0]);
+			
+			if (settings.isFinishingWhenExitingPrev==0) {
+				if (savedText!=null) editRichText.setText(0, savedText);
+				else editRichText.setText(0, null);
+			}
+			
+			//restoreContents()에서 읽어들인 텍스트를 설정한다.
+			editText = new EditText(true, false, this, "EditText", boundsOfEditText, 
+					fontSize, false, new CodeString(text, Color.BLACK), 
+					EditText.ScrollMode.Both, Color.WHITE);
+			editText.setBackColor(settings.selectedColor[0]);
+			
+			if (settings.isFinishingWhenExitingPrev==0) {
+				if (strSavedText!=null) editText.setText(0, new CodeString(strSavedText,editText.textColor));
+				else editText.setText(0, null);
+			}
+			
+			
+			
+			//Control.prevSizeConstant = new RectangleF(editText.bounds); 
+			//Control.prevSizeTotalConstant = new RectangleF(editText.totalBounds);
+			
+			//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+			isEditRichTextOrEditText = 1;
+			
+			if (isEditRichTextOrEditText==0) {
+				editRichText.setHides(false);
+				integrationKeyboard.setOnTouchListener(editRichText);
+				
+			}
+			else if (isEditRichTextOrEditText==1){
+				editText.setHides(false);
+				integrationKeyboard.setOnTouchListener(editText);
+				
+			}
+			else {
+				RectangleF bounds = new RectangleF(widthOfGap, 
+						boundsOfButtonMenu.bottom()+heightOfGap, 
+						width*scaleOfEditTextX, height*scaleOfEditTextY);
+				isEditRichTextOrEditText = 2;
+				if (terminal==null) {
+					int color = Control.settingsDialog.selectedColor[0];
+					terminal = new Terminal(bounds, color);
+					terminal.setHides(false);
+					integrationKeyboard.setOnTouchListener(terminal);
+				}
+			}
+			integrationKeyboard.setHides(false);
+		
+		menu = new ContextMenu("menu", boundsOfMenu, MenuType.Vertical, this, 
+				ContextMenu.textsOfButtons, new Size(5,5), true, this);
+		
+		menu.buttons[4].selectable = true;	// Maximize/PrevSize 메뉴는 토글로 동작한다.
+		menu.buttons[4].toggleable = true;
+		menu.buttons[4].ColorSelected = Color.YELLOW;
+		
+		menu.buttons[3].selectable = true;	// Sizable 메뉴는 토글로 동작한다.
+		menu.buttons[3].toggleable = true;
+		menu.buttons[3].ColorSelected = Color.YELLOW;
+		
+		menu.buttons[5].selectable = true;	// EditRichText/EditText 메뉴는 토글로 동작한다.
+		menu.buttons[5].toggleable = true;
+		menu.buttons[5].ColorSelected = Color.YELLOW;
+		
+		//controlInfo.listOfControlsInContainer.add(menu);
+				
+		
+		paint.setStyle(Style.FILL);
+		paint.setColor(Color.MAGENTA);
+		
+		
+		//boundsOfSizingBorder = new RectangleF(boundsOfEditText2.x, boundsOfEditText2.bottom()+1, 
+		//		boundsOfEditText2.width, 3);
+		boundsOfSizingBorder.height = integrationKeyboard.buttons[0].bounds.y - boundsOfSizingBorder.y;
+		
+		sizingBorder = new SizingBorder(this, boundsOfSizingBorder, this);
+		//Control.controlStack.add(sizingBorder);
+		//boundsOfSizingBorder.height = integrationKeyboard.buttons[0].bounds.y - boundsOfSizingBorder.y; 
+		//sizingBorder.setBoundsDrawing(boundsOfSizingBorder);
+		Control.sizingBorder = sizingBorder;
+		
+		//backUpBounds();
+		
+		
+		Control.loggingForNetwork = new LoggingScrollable(this, boundsOfLoggingForNetwork, 
+				"", EditText.ScrollMode.VScroll, height*0.035f);
+		
+		// 텍스트색상을 남색으로 설정
+		Control.loggingForNetwork.setTextColor(ColorEx.darkerOrLighter(Color.BLUE, 0.5f));
+		
+		Control.loggingForMessageBox = new LoggingScrollable(this, boundsOfLoggingForMessageBox, 
+				"", EditText.ScrollMode.VScroll, height*0.035f);
+		
+		
+		createFileDialog();
+		Control.fileDialog = fileDialog;
+		
+		
+		
+		
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		/*Intent loadIntent = Control.activity.getIntent(); 
+		if (loadIntent!=null) {
+			Uri uri = loadIntent.getData();
+			if (uri!=null) {
+				String filenameLoaded = uri.getPath();
+				readFile(filenameLoaded);
+				int count;
+				count = Control.controlStack.count;
+			}
+		}*/
+					
+		
+		
+	}
+	
+	
+	
+	
+	
+		
+	void createFileDialog() {
+		try {
+		fileDialog = new FileDialog(this, boundsOfFileDialog, null);
+		//fileDialog.setOnTouchListener(this);
+		
+		if (playListAndCurSongInfo==null) return;
+		if (this.playListAndCurSongInfo.state.equals("Play_")) {
+			if (mPlayList!=null && mPlayList.length>0) {
+				fileDialog.isFullScreen = true;
+				fileDialog.canSelectFileType = true;
+				fileDialog.setScaleValues();
+				fileDialog.changeBounds(new RectangleF(0,0,getWidth(),getHeight()));
+				
+				fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.All);
+				integrationKeyboard.setHides(true);
+				
+				fileDialog.open(this, "FileExplorer");
+				
+				ArrayListString fileList = new ArrayListString(mPlayList.length);
+				int i;
+				for (i=0; i<mPlayList.length; i++) {
+					fileList.add(mPlayList[i]);
+				}
+				// 음악을 곧바로 재생한다.
+				fileDialog.listenToMusic(fileList, this.playListAndCurSongInfo);
+			}
+		}
+		else {
+			if (mPlayList!=null && mPlayList.length>0) {
+				ArrayListString fileList = new ArrayListString(mPlayList.length);
+				int i;
+				for (i=0; i<mPlayList.length; i++) {
+					fileList.add(mPlayList[i]);
+				}
+				// 음악을 곧바로 재생하지 않고 나중에 재생할 수 있다.
+				fileDialog.setPlayListAndCurSongInfo(fileList, this.playListAndCurSongInfo);
+			}
+			
+		}
+		}catch(Exception e) {
+			Log.e("createFileDialog", e.toString());
+			e.printStackTrace();
+		}
+	}
+	
+	
+	
+	
+	/*public void createMenuBluetoothDevices(ArrayListString namesOfMenuBluetoothDevices) {
+		float x, y, w, h;
+		w = width;
+		h = editRichText.bounds.height;
+		x = 0;
+		y = editRichText.bounds.y;
+		RectangleF boundsOfMenuBluetoothDevices = new RectangleF(x, y, w, h);
+		menuBluetoothDevices = new MenuWithClosable("BluetoothDevices", boundsOfMenuBluetoothDevices, 
+				MenuType.Vertical, this, namesOfMenuBluetoothDevices.getItems(), new Size(2,2), true, this);
+		//menuBluetoothDevices.isOpen = true;
+	}*/
+	
+	void changeBounds(RectangleF boundsOfEditText) {
+		int heightOfGap = (int)(height * vertScaleOfGap);
+		float top = boundsOfEditText.bottom()+heightOfGap;
+		RectangleF boundsOfIntegrationKeyboard = new RectangleF(0, top,
+				width*scaleOfKeyboardX, height-top);
+		integrationKeyboard.changeBounds(boundsOfIntegrationKeyboard);
+		
+		boundsOfSizingBorder.y = boundsOfEditText.bottom() + 1;
+		boundsOfSizingBorder.height = integrationKeyboard.buttons[0].bounds.y - boundsOfSizingBorder.y;
+		sizingBorder.bounds = boundsOfSizingBorder;
+		
+	}
+	
+	public void onDraw(Canvas canvas) {	
+		if (!sized) {
+			width = getWidth();
+			height = getHeight();
+			
+			try {
+				
+				Control.viewEx.sized();
+				initControls();
+				
+				sized = true;
+				
+				
+				//canvas.setBitmap(mBitmap);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}			
+		}
+		try {
+			int i;
+			buttonMenu.draw(canvas);
+			
+			for (i=0; i<Control.controlStack.count; i++) {
+				try {
+				Control control = Control.controlStack.getItem(i);
+				control.draw(canvas);
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+		
+							
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void resume() {
+		//restoreContents();
+		//Control.showLogForMessageBox(true, "Resume()");
+		time1OfTouch = 0;
+		if (fileDialog!=null && fileDialog.mediaPlayer!=null) {
+			fileDialog.mediaPlayer.resume();
+		}
+		//exitTimer.startTimer();
+		
+		//setRunning(true);
+		//Control.setModified(true);
+		/*renderThread = new Thread(this);
+		renderThread.start();*/
+		
+		/*if (fileExplorerDialog!=null && fileExplorerDialog.mediaPlayer!=null) {
+			fileExplorerDialog.mediaPlayer.resume();
+		}*/
+		
+		
+	}
+	
+	@Override
+	public void pause() {
+		time1OfTouch = 0;
+		if (exitTimer!=null) exitTimer.cancelTimer();
+		//this.backupContents();
+		
+	}
+	
+		
+	void drawLogging(Canvas canvas) {
+		if (Control.loggingForNetwork.getHides()==false) {
+			Control.loggingForNetwork.draw(canvas);
+		}
+		if (Control.loggingForMessageBox.getHides()==false) {
+			Control.loggingForMessageBox.draw(canvas);
+		}
+	}
+		
+	public boolean onTouch(com.gsoft.common.Events.MotionEvent event, SizeF scaleFactor) {
+    	//if (hides==true || IsPointIn(new Point(event.x, event.y))==false) return false;
+    	
+    	if (event.actionCode==com.gsoft.common.Events.MotionEvent.ActionDown) {
+    	}
+    	else if (event.actionCode==com.gsoft.common.Events.MotionEvent.ActionMove) {
+    	}
+    	else if (event.actionCode==com.gsoft.common.Events.MotionEvent.ActionUp) {
+    	}
+    	
+    	onTouchEvent(this, event);
+    	
+    	return true;
+    }
+	
+	
+	public void backupContents() {
+		IO.IsLittleEndian = true;
+		if (Control.activity.isFinishing()==false) {
+	    	//if (this.editRichText.isModified || this.editText.isModified) {
+				backupText();
+	    	//}		
+		}
+    	backupSettings();
+		backupPlaylist();
+		isSaved = true;
+	}
+	
+	void backupText() {
+		IO.IsLittleEndian = true;
+		Context context = getContext();
+		FileOutputStream stream=null;
+		BufferedOutputStream bos=null;
+		boolean r = false;
+		String absFilename=null;
+		TextFormat format = TextFormat.UTF_8;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_EditRichText.kjy";
+			stream = new FileOutputStream(absFilename);
+			//int bufferSize = (int) (FileHelper.getFileSize(absFilename, true)*IO.DefaultBufferSizeParam);
+			bos = new BufferedOutputStream(stream);				
+			editRichText.write(bos, format);
+			bos.flush();
+			r = true;
+			//}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			//r= false;
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			//r = false;
+		}
+		finally {
+			FileHelper.close(bos);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+		
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_EditText.txt";
+			stream = new FileOutputStream(absFilename);
+			bos = new BufferedOutputStream(stream/*, IO.DefaultBufferSize*/);
+			editText.write(bos, format);
+			bos.flush();
+			r = true;
+			//}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			//r= false;
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			//r = false;
+		}
+		finally {
+			FileHelper.close(bos);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+		
+		
+	}
+	
+	/** 음악을 재생중일 때만 playList를 덮어쓰고 
+	 * 재생중이 아니면 state만 저장하고 playlist는 저장하지 않는다.*/
+	void backupPlaylist() {
+		Context context = getContext();
+		FileOutputStream stream=null;
+		BufferedOutputStream bos=null;
+		boolean r = false;
+		String absFilename=null;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_playlist.txt";
+			/*if ((new File(absFilename)).exists()==true) {
+				stream = new FileOutputStream(absFilename, true);
+			}
+			else {
+				stream = new FileOutputStream(absFilename);
+			}*/
+			stream = new FileOutputStream(absFilename);
+			bos = new BufferedOutputStream(stream/*, IO.DefaultBufferSize*/);
+			writePlaylistAndCurSongInfo(bos, TextFormat.UTF_8);
+			r = true;
+		} catch (FileNotFoundException e) {
+			r= false;
+		}
+		catch (Exception e) {
+			r = false;
+		}
+		finally {
+			FileHelper.close(bos);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+	}
+	
+	void backupSettings() {
+		Context context = getContext();
+		FileOutputStream stream=null;
+		BufferedOutputStream bos=null;
+		boolean r = false;
+		String absFilename=null;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_settings";
+			stream = new FileOutputStream(absFilename);
+			bos = new BufferedOutputStream(stream/*, IO.DefaultBufferSize*/);
+			Control.settingsDialog.save(bos);
+			
+			//IO.writeInt(bos, v);
+			r = true;
+		} catch (FileNotFoundException e) {
+			r= false;
+		}
+		catch (Exception e) {
+			r = false;
+		}
+		finally {
+			FileHelper.close(bos);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+	}
+	
+	void backupFilenameLoaded() {
+		Context context = getContext();
+		FileOutputStream stream=null;
+		BufferedOutputStream bos=null;
+		boolean r = false;
+		String absFilename=null;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_filename_loaded.txt";
+			stream = new FileOutputStream(absFilename);
+			bos = new BufferedOutputStream(stream/*, IO.DefaultBufferSize*/);
+			IO.writeString(bos, filename, TextFormat.UTF_8);
+			r = true;
+		} catch (FileNotFoundException e) {
+			r= false;
+		}
+		catch (Exception e) {
+			r = false;
+		}
+		finally {
+			FileHelper.close(bos);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+	}
+	
+	void writePlaylistAndCurSongInfo(OutputStream os, TextFormat format) {
+		try {
+			fileDialog.write(os, format);
+		}catch(Exception e) {
+			
+		}
+	}
+	
+	
+	public void restoreText() {
+		Context context = getContext();
+		FileInputStream stream=null;
+		BufferedInputStream bis=null;
+		String absFilename=null;
+		boolean r = false;
+		File file = null;
+		File contextDir = context.getFilesDir();
+		TextFormat format = TextFormat.UTF_8;
+		try {
+			//stream = context.openFileInput("backup_file.kjy");
+			
+			//if (this.isEditRichTextOrEditText) {
+				absFilename = contextDir.getAbsolutePath() + File.separator + "backup_EditRichText.kjy";
+				file = new File(absFilename);
+				if (file.exists()) {
+					stream = new FileInputStream(absFilename);
+					int bufferSize = (int) (FileHelper.getFileSize(absFilename, true)*IO.DefaultBufferSizeParam);
+					bis = new BufferedInputStream(stream, bufferSize);
+					TextLine text = EditRichText.Read(bis, format);
+					this.savedText = text;
+					
+				}
+				r = true;
+		} 
+		catch (OutOfMemoryError e) {
+			// TODO Auto-generated catch block
+			this.savedText = null;
+			//this.strSavedText = null;
+			//r=false;
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			this.savedText = null;
+			//this.strSavedText = null;
+			//r=false;
+		}
+		finally {
+			FileHelper.close(bis);
+			FileHelper.close(stream);
+			if (!r) {
+				if (file!=null) file.delete();
+			}
+		}
+		
+		try {
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_EditText.txt";
+			file = new File(absFilename);
+			if (file.exists()) {
+				stream = new FileInputStream(absFilename);
+				int bufferSize = (int) (FileHelper.getFileSize(absFilename, true)*IO.DefaultBufferSizeParam);
+				bis = new BufferedInputStream(stream, bufferSize);
+				String text = EditText.Read(bis, format);
+				this.strSavedText = text;
+				
+			}
+			r = true;
+		}
+		catch (OutOfMemoryError e) {
+			// TODO Auto-generated catch block
+			this.savedText = null;
+			//this.strSavedText = null;
+			//r=false;
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			this.savedText = null;
+			//this.strSavedText = null;
+			//r=false;
+		}
+		finally {
+			FileHelper.close(bis);
+			FileHelper.close(stream);
+			if (!r) {
+				if (file!=null) file.delete();
+			}
+		}
+		
+	}
+	
+	public void restorePlaylist() {
+		Context context = getContext();
+		FileInputStream stream=null;
+		BufferedInputStream bis=null;
+		String absFilename=null;
+		boolean r = false;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_playlist.txt";
+			stream = new FileInputStream(absFilename);
+			int bufferSize = (int) (FileHelper.getFileSize(absFilename, true)*IO.DefaultBufferSizeParam);
+			bis = new BufferedInputStream(stream, bufferSize);
+			readPlayListAndCurSongInfo(bis);
+			r= true;
+		} catch (FileNotFoundException e) {
+			r=false;
+		}
+		catch (Exception e) {
+			r=false;
+		}
+		finally {
+			FileHelper.close(bis);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					File file = new File(absFilename);
+					file.delete();
+				}
+			}
+		}
+	}
+	
+	public void restoreSettings() {
+		Context context = getContext();
+		FileInputStream stream=null;
+		BufferedInputStream bis=null;
+		String absFilename=null;
+		boolean r = false;
+		try {
+			File contextDir = context.getFilesDir();
+			absFilename = contextDir.getAbsolutePath() + File.separator + "backup_settings";
+			stream = new FileInputStream(absFilename);
+			int bufferSize = (int) (FileHelper.getFileSize(absFilename, true)*IO.DefaultBufferSizeParam);
+			bis = new BufferedInputStream(stream, bufferSize);
+			settings = SettingsDialog.load(bis);
+			
+			r= true;
+		} 
+		catch (Exception e) {
+			settings = new Settings();
+			r=false;
+		}
+		finally {
+			FileHelper.close(bis);
+			FileHelper.close(stream);
+			if (!r) {
+				if (absFilename!=null) {
+					//File file = new File(absFilename);
+					//file.delete();
+				}
+			}
+		}
+	}
+	
+	public void restoreContents() {
+		restoreSettings();
+		if (this.settings.isFinishingWhenExitingPrev==0) {
+			restoreText();
+		}
+		restorePlaylist();
+		
+	}
+	
+	void readPlayListAndCurSongInfo(InputStream is) {
+		try {
+			this.playListAndCurSongInfo = FileDialog.readPlayListAndCurSongInfo(is);
+			
+			mPlayList = playListAndCurSongInfo.playList;
+		}catch(Exception e) {
+			
+		}
+	}
+
+	
+	@Override
+	public void onTouchEvent(Object sender, com.gsoft.common.Events.MotionEvent e) {
+		// TODO Auto-generated method stub		
+		
+		
+		if (sender instanceof Button) {
+			Button button = (Button)sender;
+			if (button.iName==buttonMenu.iName) {
+				if (Control.isMaximized) {
+					menu.buttons[4].isSelected = true;
+				}
+				else {
+					menu.buttons[4].isSelected = false;
+				}
+				menu.open(this, true);
+			}
+			// "New Document", "Load", "Save", "Minimize", "Maximize", "PrevSize", "Connect to server", "Close"
+			else if (button.iName==menu.buttons[0].iName) {	// new document
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				if (isEditRichTextOrEditText==0) {
+					editRichText.initialize();
+				}
+				else if (isEditRichTextOrEditText==1) {
+					editText.initialize();
+				}
+				else {
+					if (terminal!=null) terminal.editText.initialize();
+				}
+				menu.open(this, false);
+			}
+			else if (button.iName==menu.buttons[1].iName) { // load
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				// 키보드의 리스너가 겹치므로 키보드의 기존 리스너를 보관하고 있다가 
+				// 대화상자가 닫힐 시 환원한다.
+				if (fileDialog.getIsOpen()) {
+					Control.loggingForMessageBox.setText(true, "File explorer already opens", false);
+					Control.loggingForMessageBox.setHides(false);
+					return;
+				}
+				/*if (Control.isMaximized==false) {
+					fileDialog.isFullScreen = false;					
+				}
+				else {
+					fileDialog.isFullScreen = true;
+				}*/
+				fileDialog.isFullScreen = true;
+				fileDialog.canSelectFileType = false;
+				fileDialog.isForViewing = false;
+				fileDialog.setScaleValues();
+				fileDialog.changeBounds(new RectangleF(0,0,getWidth(),getHeight()));
+				
+				if (isEditRichTextOrEditText==0) {
+					fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.Custom);
+				}
+				else if (isEditRichTextOrEditText==1) {
+					fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.Text);
+				}
+				fileDialog.setIsForReadingOrSaving(true);
+				fileDialog.open(this, "FileExplorer - Load");
+				menu.open(this, false);
+				
+				/*editRichText.setHides(true);
+				editText.setHides(true);
+				if (terminal!=null) terminal.setHides(true);*/
+			}
+			else if (button.iName==menu.buttons[2].iName) { //save
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				if (fileDialog.getIsOpen()) {
+					Control.loggingForMessageBox.setText(true, "File explorer already opens", false);
+					Control.loggingForMessageBox.setHides(false);
+					return;
+				}
+				// 키보드의 리스너가 겹치므로 키보드의 기존 리스너를 보관하고 있다가 
+				// 대화상자가 닫힐 시 환원한다.
+				/*if (Control.isMaximized==false) {
+					fileDialog.isFullScreen = false;					
+				}
+				else {
+					fileDialog.isFullScreen = true;
+				}*/
+				fileDialog.isFullScreen = true;
+				fileDialog.canSelectFileType = false;
+				fileDialog.isForViewing = false;
+				fileDialog.setScaleValues();
+				//RectangleF newBoundsOfEditText = new RectangleF(Control.totalBoundsOfEditText);
+				fileDialog.changeBounds(new RectangleF(0,0,getWidth(),getHeight()));
+				
+				if (this.isEditRichTextOrEditText==0) {
+					fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.Custom);
+				}
+				else if (isEditRichTextOrEditText==1) {
+					fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.Text);
+				}
+				fileDialog.setIsForReadingOrSaving(false);
+				fileDialog.open(this, "FileExplorer - Save");
+				menu.open(this, false);
+				
+				/*editRichText.setHides(true);
+				editText.setHides(true);
+				if (terminal!=null) terminal.setHides(true);*/
+			}
+			else if (button.iName==menu.buttons[3].iName) { // Sizable
+				menu.open(this, false);
+				if (Control.isMaximized) return;
+				if (button.isSelected==false)
+					sizingBorder.setHides(true);
+				else
+					sizingBorder.setHides(false);
+			}
+			else if (button.iName==menu.buttons[4].iName) { // maximize/prevSize
+				menu.open(this, false);
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				Control.loggingForMessageBox.setText(true, "Loading...", false);
+				Control.loggingForMessageBox.setHides(false);
+				//MaxPrevSizeThread thread = new MaxPrevSizeThread();
+				//thread.start();
+				setMaximized();
+				invalidate();
+			}
+			else if (button.iName==menu.buttons[5].iName) { // isEditRichTextOrEditText
+				menu.open(this, false);
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				if (isEditRichTextOrEditText==0) {
+					isEditRichTextOrEditText = 1;
+				}
+				else if (isEditRichTextOrEditText==1) {
+					if (terminal!=null) {
+						isEditRichTextOrEditText = 2;
+					}
+					else {
+						isEditRichTextOrEditText = 0;
+					}
+				}
+				else {
+					isEditRichTextOrEditText = 0;
+				}
+				if (isEditRichTextOrEditText==0) {					
+					/*RectangleF newBounds = new RectangleF(boundsOfEditText);
+					newBounds.x = editRichText.bounds.x;
+					newBounds.width = editRichText.bounds.width;
+					editRichText.changeBounds(newBounds);*/
+					editRichText.setHides(false);
+					editText.setHides(true);
+					if (terminal!=null) terminal.setHides(true);
+					
+				}
+				else if (isEditRichTextOrEditText==1) {
+					/*RectangleF newBounds = new RectangleF(boundsOfEditText);
+					newBounds.x = editText.bounds.x;
+					newBounds.width = editText.bounds.width;
+					editText.changeBounds(newBounds);*/
+					editText.setHides(false);
+					editRichText.setHides(true);
+					if (terminal!=null) terminal.setHides(true);
+				}
+				else if (isEditRichTextOrEditText==2) {
+					if (terminal==null) return;
+					/*RectangleF newBounds = new RectangleF(boundsOfEditText);
+					newBounds.x = terminal.editText.bounds.x;
+					newBounds.width = terminal.editText.bounds.width;
+					terminal.editText.changeBounds(newBounds);*/
+					terminal.setHides(false);
+					editRichText.setHides(true);
+					editText.setHides(true);
+				}
+				
+			}
+			else if (button.iName==menu.buttons[6].iName) { // open file explorer				
+				menu.open(this, false);
+				if (fileDialog.getIsOpen()) {
+					Control.loggingForMessageBox.setText(true, "File explorer already opens", false);
+					Control.loggingForMessageBox.setHides(false);
+					return;
+				}
+				// 키보드의 리스너가 겹치므로 키보드의 기존 리스너를 보관하고 있다가 
+				// 대화상자가 닫힐 시 환원한다.
+				//fileExplorerDialog.createAndSetFileListButtons(fileExplorerDialog.curDir, FileDialog.Category.All);				
+				//fileExplorerDialog.open(this);
+				fileDialog.isFullScreen = true;
+				fileDialog.canSelectFileType = true;
+				fileDialog.isForViewing = true;
+				fileDialog.setScaleValues();
+				fileDialog.changeBounds(new RectangleF(0,0,getWidth(),getHeight()));
+				fileDialog.createAndSetFileListButtons(fileDialog.curDir, FileDialog.Category.All);
+				//integrationKeyboard.setHides(true);
+				fileDialog.open(this, "FileExplorer");
+				
+				//editRichText.setHides(true);
+				//editText.setHides(true);
+				//if (terminal!=null) terminal.setHides(true);
+				
+			}
+			else if (button.iName==menu.buttons[7].iName) { // Show arrow keys
+				menu.open(this, false);
+				// 한 칸 전 Mode로 파라미터를 설정해서 특수문자 키보드로 바꿔 준다.
+				integrationKeyboard.process자판(Mode.Eng);
+			}
+			else if (button.iName==menu.buttons[8].iName) { // about programmer
+				menu.open(this, false);
+				/*String text = Control.res.getString(R.string.about_program);
+				Control.loggingForMessageBox.setText(true, text, false);
+				Control.loggingForMessageBox.setHides(false);*/
+				if (messageDialog==null) {
+					String message = Control.res.getString(R.string.about_program);
+					RectangleF boundsOfDialog = new RectangleF(0, 0, width*0.9f, height*0.7f);
+					boundsOfDialog.x = (width-boundsOfDialog.width) / 2;
+					boundsOfDialog.y = (height-boundsOfDialog.height) / 2;
+					createMessageDialog(boundsOfDialog, height * 0.04f, message);
+					//messageDialog.editText.setScrollMode(EditText.ScrollMode.Both);
+				}
+				messageDialog.open(this, true);
+				Control.loggingForMessageBox.setHides(true);
+			}
+			else if (button.iName==menu.buttons[9].iName) { // current time
+				menu.open(this, false);
+				
+				String dateTime = com.gsoft.common.Util.Date.getCurDateTime(true);
+				String text = dateTime;
+				Control.loggingForMessageBox.setText(true, text, false);
+				Control.loggingForMessageBox.setHides(false);
+			}
+			else if (button.iName==menu.buttons[10].iName) { // terminal
+				menu.open(this, false);
+				RectangleF bounds = new RectangleF(widthOfGap, 
+						boundsOfButtonMenu.bottom()+heightOfGap, 
+						width*scaleOfEditTextX, height*scaleOfEditTextY);
+				isEditRichTextOrEditText = 2;
+				if (terminal==null) {
+					int selectedColor = Control.settingsDialog.selectedColor[0];
+					terminal = new Terminal(bounds, selectedColor);
+				}
+				/*editRichText.setHides(true);
+				editText.setHides(true);*/
+				terminal.setHides(false);
+				
+			}
+			else if (button.iName==menu.buttons[11].iName) { // Settings
+				menu.open(this, false);
+				Control.settingsDialog.open(this, true);
+			}
+			else if (button.iName==menu.buttons[12].iName) { // 실제로 종료한다.	// close
+				close();
+			}
+			
+		}	// button
+		else if (sender instanceof FileDialog) { 
+			// load, save, fileExplorer
+			FileDialog dialog = (FileDialog)sender;
+				
+			if (dialog.isFullScreen) { // open FileExplorer				
+				if (dialog.isForViewing==true && dialog.getIsOK()==true) {
+					Control.loggingForMessageBox.setText(true, "Please use the load/save button.", false);
+					Control.loggingForMessageBox.setHides(false);
+					return;
+				}
+			}
+			// load, save
+			if (dialog.getIsOK()==false) return;
+			if (dialog.iName!=fileDialog.iName) return;
+			filename = dialog.filename;
+			//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+			
+			if (dialog.getIsForReadingOrSaving()==false) {
+				// 터치시 OnTouchListener로 리턴한 후 invalidate가 호출되므로
+				// invalidate를 호출할 필요가 없다.
+				Control.loggingForMessageBox.setText(true, "Saving...", false);
+				Control.loggingForMessageBox.setHides(false);
+				WriteFileThread thread = new WriteFileThread();
+				thread.start();
+				
+			}
+			else {
+				// 터치시 OnTouchListener로 리턴한 후 invalidate가 호출되므로
+				// invalidate를 호출할 필요가 없다.
+				//boolean hasSomeText = false;
+				if (isEditRichTextOrEditText==0) {
+					editRichText.initialize();
+				}
+				else if (isEditRichTextOrEditText==1) {
+					editText.initialize();
+				}
+				
+				Control.loggingForMessageBox.setText(true, "Loading...", false);
+				Control.loggingForMessageBox.setHides(false);
+				ReadFileThread thread = new ReadFileThread();
+				thread.start();
+			}
+		}		
+		else if (sender instanceof SizingBorder) {
+			if (e.actionCode==com.gsoft.common.Events.MotionEvent.ActionMove){
+				//isEditRichTextOrEditText = getIsEditRichTextOrEditText_Correct();
+				if (this.isEditRichTextOrEditText==0) {
+					RectangleF bounds = editRichText.bounds;
+					float heightOfEditText = e.y-1-bounds.y;				
+					int viewHeight = getHeight();
+					float heightOfKeyboard = viewHeight - e.y;
+					float minHeight = viewHeight*0.2f;
+					if (heightOfEditText > minHeight && heightOfKeyboard > minHeight) {
+						
+						sizingBorder.bounds.y = e.y;
+						
+						RectangleF newBoundsOfEditText = new RectangleF(bounds);
+						newBoundsOfEditText.height = heightOfEditText;
+						
+						editRichText.resize(newBoundsOfEditText);
+						
+						//Control.prevSizeConstant = new RectangleF(editRichText.bounds);
+						//Control.prevSizeOfKeyboardConstant = integrationKeyboard.bounds;
+					}
+				}
+				else if (isEditRichTextOrEditText==1) {
+					RectangleF bounds = editText.bounds;
+					float heightOfEditText = e.y-1-bounds.y;
+					int viewHeight = getHeight();
+					float heightOfKeyboard = viewHeight - e.y;
+					float minHeight = viewHeight*0.2f;
+					if (heightOfEditText > minHeight && heightOfKeyboard > minHeight) {
+												
+						sizingBorder.bounds.y = e.y;
+						
+						RectangleF newBoundsOfEditText = new RectangleF(bounds);
+						newBoundsOfEditText.height = heightOfEditText;
+						
+						editText.resize(newBoundsOfEditText);
+						
+						//Control.prevSizeConstant = new RectangleF(editText.bounds);
+						//Control.prevSizeOfKeyboardConstant = integrationKeyboard.bounds;
+					}
+					
+				}
+			}
+		
+		}
+		else if (sender instanceof SettingsDialog) {	// SettingsDialog의 OK버튼
+			SettingsDialog dialog = (SettingsDialog)sender;
+			int selectedColor = dialog.selectedColor[0];			
+			editText.setBackColor(selectedColor);
+			editRichText.setBackColor(selectedColor);
+			if (terminal!=null) terminal.editText.setBackColor(selectedColor);
+			
+			selectedColor = dialog.selectedColor[1];
+			this.integrationKeyboard.setBackColor(selectedColor);
+			
+			String pathAndroid = dialog.editTextDirectory.getText().str;
+			Control.pathAndroid = dialog.editTextDirectory.getText().substring(0, pathAndroid.length()-1).str;
+			invalidate();
+		}
+		else if (sender instanceof MessageDialog) {	// CloseDialog의 OK버튼
+			MessageDialog dialog = (MessageDialog)sender;
+			if (dialog.iName==closeDialog.iName) {
+				close();
+			}
+		}
+		
+	}
+	
+	void setMaximized() {
+		if (isEditRichTextOrEditText==0) {
+			if (menu.buttons[4].isSelected) {
+				if (Control.isMaximized) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = true;
+				/*
+				if (editRichText.bounds.bottom()+5 < height)
+					backUpBounds();
+				
+				//integrationKeyboard.setHides(true);
+				//sizingBorder.setHides(true);
+				float x = editRichText.bounds.x;
+				float y = editRichText.bounds.y;
+				float w = editRichText.bounds.width;
+				float h = height - y;
+				RectangleF bounds = new RectangleF(x,y,w,h);
+				
+				boundsOfEditText.height = h;
+				
+				editRichText.changeBounds(bounds);
+				editRichText.setHides(false);
+				
+				integrationKeyboard.setHides(true);*/
+				
+				editRichText.setMaximized(true);
+			}
+			else { // prevsize
+				if (Control.isMaximized==false) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = false;
+				/*integrationKeyboard.setHides(false);
+				sizingBorder.setHides(true);
+				editRichText.setHides(false);
+				
+				RectangleF newBoundsOfEditText = new RectangleF(prevSizeOfEditText);
+				newBoundsOfEditText.x = editRichText.bounds.x;
+				newBoundsOfEditText.width = editRichText.bounds.width;
+										
+				boundsOfEditText.height = prevSizeOfEditText.height;
+				
+				editRichText.changeBounds(newBoundsOfEditText);
+				
+				RectangleF newBoundsOfKeyboard = new RectangleF(prevSizeOfKeyboard);
+				integrationKeyboard.changeBounds(newBoundsOfKeyboard);
+				
+				RectangleF newBoundsOfBorder = new RectangleF(prevSizeOfSizingBorder);
+				sizingBorder.changeBounds(newBoundsOfBorder);*/
+				editRichText.setMaximized(false);
+			}
+		}
+		else if (isEditRichTextOrEditText==1) {	// EditText
+			if (menu.buttons[4].isSelected) {
+				if (Control.isMaximized) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = true;
+				
+				/*if (editText.bounds.bottom()+5 < height)
+					backUpBounds();
+				float x = editText.bounds.x;
+				float y = editText.bounds.y;
+				float w = editText.bounds.width;
+				float h = height - y;
+				boundsOfEditText.height = h;
+				RectangleF bounds = new RectangleF(x,y,w,h);
+				editText.changeBounds(bounds);
+				editText.setHides(false);
+				integrationKeyboard.setHides(true);*/
+				
+				editText.setMaximized(true);
+			}
+			else { // prevsize
+				if (Control.isMaximized==false) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = false;
+				/*integrationKeyboard.setHides(false);
+				sizingBorder.setHides(true);
+				editText.setHides(false);
+				
+				RectangleF newBoundsOfEditText = new RectangleF(prevSizeOfEditText);
+				newBoundsOfEditText.x = editText.bounds.x;
+				newBoundsOfEditText.width = editText.bounds.width;
+				
+				boundsOfEditText.height = prevSizeOfEditText.height;
+				
+				editText.changeBounds(newBoundsOfEditText);
+				
+				RectangleF newBoundsOfKeyboard = new RectangleF(prevSizeOfKeyboard);
+				integrationKeyboard.changeBounds(newBoundsOfKeyboard);
+				
+				RectangleF newBoundsOfBorder = new RectangleF(prevSizeOfSizingBorder);
+				sizingBorder.changeBounds(newBoundsOfBorder);*/
+				editText.setMaximized(false);
+			}
+			
+		}
+		else if (isEditRichTextOrEditText==2) {	// Terminal
+			if (terminal==null) return;
+			if (menu.buttons[4].isSelected) {
+				if (Control.isMaximized) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = true;
+				/*if (terminal.editText.bounds.bottom()+5 < height)
+					backUpBounds();
+				//integrationKeyboard.setHides(true);
+				//sizingBorder.setHides(true);
+				float x = terminal.editText.bounds.x;
+				float y = terminal.editText.bounds.y;
+				float w = terminal.editText.bounds.width;
+				float h = height - y;
+				boundsOfEditText.height = h;
+				RectangleF bounds = new RectangleF(x,y,w,h);
+				terminal.editText.changeBounds(bounds);
+				terminal.setHides(false);
+				integrationKeyboard.setHides(true);*/
+				terminal.editText.setMaximized(true);
+			}
+			else { // prevsize
+				if (Control.isMaximized==false) {
+					Control.loggingForMessageBox.setHides(true);
+					//postInvalidate();
+					return;
+				}
+				Control.isMaximized = false;
+				/*integrationKeyboard.setHides(false);
+				sizingBorder.setHides(true);
+				terminal.setHides(false);
+				
+				RectangleF newBoundsOfEditText = new RectangleF(prevSizeOfEditText);
+				newBoundsOfEditText.x = terminal.editText.bounds.x;
+				newBoundsOfEditText.width = terminal.editText.bounds.width;
+				
+				boundsOfEditText.height = prevSizeOfEditText.height;
+				
+				terminal.editText.changeBounds(newBoundsOfEditText);
+				
+				RectangleF newBoundsOfKeyboard = new RectangleF(prevSizeOfKeyboard);
+				integrationKeyboard.changeBounds(newBoundsOfKeyboard);
+				
+				RectangleF newBoundsOfBorder = new RectangleF(prevSizeOfSizingBorder);
+				sizingBorder.changeBounds(newBoundsOfBorder);*/
+				terminal.editText.setMaximized(false);
+			}
+			
+		}
+		Control.loggingForMessageBox.setHides(true);
+		//postInvalidate();
+	}
+	
+	class MaxPrevSizeThread extends Thread {
+		public void run() {
+			setMaximized();
+			postInvalidate();
+		}// run()
+	}
+	
+	class WriteFileThread extends Thread {
+		public void run() {
+			FileOutputStream stream=null;
+			BufferedOutputStream bos=null;
+			try {
+				//Control.loggingForMessageBox.setHides(false);
+				//Control.loggingForMessageBox.setText(true, "Saving...", false);
+				String filenameExceptExt = FileHelper.getFilenameExceptExt(filename);				
+				if (isEditRichTextOrEditText==0) {
+					filename = filenameExceptExt + ".kjy";
+				}
+				/*else {
+					filename = filenameExceptExt + ".txt";
+				}*/
+				String ext = FileHelper.getExt(filename);
+				
+				File file = new File(fileDialog.curDir+filename);
+				//file.setWritable(true, false);//-->NoSuchMethod Exception
+				stream = new FileOutputStream(file);
+				bos = new BufferedOutputStream(stream/*, IO.DefaultBufferSize*/);
+				
+				TextFormat format;
+				if (ext.equals(".java")) {
+					format = TextFormat.KSC;
+				}
+				else if (ext.equals(".htm") || ext.equals(".html")) {
+					format = TextFormat.UTF_8;
+				}
+				else {
+					format = TextFormat.UTF_8;
+				}
+				
+				if (isEditRichTextOrEditText==0) {
+					editRichText.write(bos, format);
+				}
+				else if (isEditRichTextOrEditText==1) {
+					editText.write(bos, format);
+				}
+				bos.close();
+				stream.close();
+				//Control.setModified(true);
+				Control.loggingForMessageBox.setHides(true);
+				postInvalidate();
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				Log.e("Save Error", e1.toString());
+				Control.loggingForMessageBox.setHides(false);
+				Control.loggingForMessageBox.setText(true, Control.res.getString(R.string.save_error_read_only), false);					
+			}
+			catch (Exception e1) {
+				// TODO Auto-generated catch block
+				Log.e("Save Error", e1.toString());
+				Control.loggingForMessageBox.setHides(false);
+				Control.loggingForMessageBox.setText(true, Control.res.getString(R.string.save_error), false);
+			}
+			finally {
+				FileHelper.close(bos);
+				FileHelper.close(stream);
+			}
+		}
+	}
+	
+	
+	public boolean load(String path, TextFormat format, com.gsoft.common.Compiler.Language lang) {
+		FileInputStream stream=null;
+		BufferedInputStream bis=null;
+		
+		long fileSize = FileHelper.getFileSize(path, true);
+		
+		try {
+			stream = new FileInputStream(path);
+			bis = new BufferedInputStream(stream, (int) (fileSize*3));
+			if (isEditRichTextOrEditText==0) {
+				TextLine text = editRichText.read(bis, format);
+				bis.close();
+				stream.close();
+				//editRichText.initCursorAndScrollPos();
+				editRichText.initialize();
+				editRichText.setText(0, text);
+				editRichText.isModified = false;
+				
+				if (text==null || text.count==0) {
+					File file = new File(path);
+					if (file.length()!=0) return false;
+				}
+			}
+			else if (isEditRichTextOrEditText==1) {
+				//IO.IsLittleEndian = false;
+				String text = editText.read(bis, format);
+				//editText.initCursorAndScrollPos();
+				editText.initialize();
+				boolean result=false;
+				if (lang==Language.Java) {
+					result = editText.setIsProgramCode(lang, text, true);
+					if (result) editText.setText(0, editText.getCompileOutput(lang));
+				}
+				else {
+					//editText.setIsProgramCode(null, null, false);
+					result = editText.setIsProgramCode(lang, text, true);
+					if (result) editText.setText(0, editText.getCompileOutput(lang));
+					else editText.setText(0, new CodeString(text,editText.textColor));
+				}
+				//editText.initCursorAndScrollPos();
+				bis.close();
+				stream.close();
+								
+				editText.isModified = false;
+				
+				if (text==null || text.length()==0) {
+					File file = new File(path);
+					if (file.length()!=0) return false;
+				}
+			}
+			
+			
+			Control.loggingForMessageBox.setHides(true);
+			postInvalidate();
+			return true;
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			Log.e("Load Error", e1.toString());
+			Control.loggingForMessageBox.setHides(false);
+			Control.loggingForMessageBox.setText(true, /*Control.res.getString(R.string.load_error_file_not_found)*/e1.toString(), false);
+			return false;
+		}
+		catch (EncodingFormatException e1) {
+			return false;
+		}
+		catch (Exception e1) {
+			// TODO Auto-generated catch block
+			Log.e("Load Error", e1.toString());
+			Control.loggingForMessageBox.setHides(false);
+			Control.loggingForMessageBox.setText(true, /*Control.res.getString(R.string.load_error)*/e1.toString(), false);
+			return false;
+		}
+		catch (OutOfMemoryError e1) {
+			Log.e("Load Error", e1.toString());
+			Control.loggingForMessageBox.setHides(false);
+			Control.loggingForMessageBox.setText(true, Control.res.getString(R.string.outof_memory_error), false);
+			return false;
+		}
+		finally {
+			FileHelper.close(bis);
+			FileHelper.close(stream);
+		}
+	}
+	
+	void readFile(String initLoadPath) {
+		String filenameExceptExt;
+		String ext;		
+		String path;
+		
+		if (initLoadPath!=null) {
+			filenameExceptExt = FileHelper.getFilenameExceptExt(initLoadPath);
+			ext = FileHelper.getExt(initLoadPath);
+			filename = filenameExceptExt + ext;
+			path = initLoadPath;
+		}
+		else {
+			filenameExceptExt = FileHelper.getFilenameExceptExt(filename);
+			ext = FileHelper.getExt(filename);
+			filename = filenameExceptExt + ext;			
+			path = fileDialog.curDir+filename;
+		}
+		TextFormat format = null;
+		com.gsoft.common.Compiler.Language lang = null;
+		
+		if (ext.equals(".java")) {
+			format = TextFormat.KSC;
+			lang = com.gsoft.common.Compiler.Language.Java;
+		}
+		else if (ext.equals(".c") || ext.equals(".cpp")) {
+			format = TextFormat.KSC;
+			lang = com.gsoft.common.Compiler.Language.C;
+		}
+		else if (ext.equals(".htm") || ext.equals(".html")) {
+			format = TextFormat.UTF_8;
+			lang = com.gsoft.common.Compiler.Language.Html;
+		}
+		else if (ext.equals(".sh")) {
+			format = TextFormat.KSC;
+		}
+		else {	// 일반 .txt
+			if (isEditRichTextOrEditText==0) {
+				if (ext.equals(".kjy")==false) {
+					Control.loggingForMessageBox.setText(true, "Can't open the file extension.", false);
+					Control.loggingForMessageBox.setHides(false);
+				}
+			}
+			else if (isEditRichTextOrEditText==1) {
+				/*if ((ext.equals(".txt"))==false) {
+					Control.loggingForMessageBox.setText(true, "Can't open the file extension.", false);
+					Control.loggingForMessageBox.setHides(false);
+					return;
+				}*/
+			}
+			format = null;
+		}
+		
+		
+		boolean r = false;
+		if (format!=null) {
+			r = load(path, format, lang);
+		}
+		else {
+			r = load(path, TextFormat.UTF_8, lang);
+			if (!r) {
+				r = load(path, TextFormat.KSC, lang);
+			}
+			if (!r) {
+				r = load(path, TextFormat.UTF_16, lang);
+			}
+		}
+	}
+	
+	class ReadFileThread extends Thread {
+		public void run() {
+			readFile(null);
+			if (isEditRichTextOrEditText==0) {
+				editRichText.initCursorAndScrollPos();
+				Control.keyboard.setOnTouchListener(editRichText);
+			}
+			else if (isEditRichTextOrEditText==1) {
+				editText.initCursorAndScrollPos();
+				Control.keyboard.setOnTouchListener(editText);
+			}
+				
+		}//run
+	}	// ReadFileThread
+	
+	void close() {
+		/*if (this.isEditRichTextOrEditText==0) {
+			editRichText.initialize();
+		}
+		else if (isEditRichTextOrEditText==1) {
+			editText.initialize();
+		}*/
+		Control.exit(false);
+		//destroy();
+	}
+	
+	void killRenderThread() {
+		if(renderThread==null) return;
+		renderThread.interrupt();
+	}
+	
+	public void destroy() {
+		//killServiceThread();
+		backupContents();
+		killRenderThread();
+		
+		if (fileDialog.isPlaying()==false) {
+			PowerManagement.releaseWakeLock();
+		}
+		
+		if (fileDialog!=null) {
+			fileDialog.destroy();
+			fileDialog = null;
+		}
+		
+		Notification.cancelNotify();
+		
+		if (exitTimer!=null) {
+			exitTimer.killTimer();
+			exitTimer = null;
+		}
+		
+		//pause();
+	}
+	
+	public void destroyExceptNotify () {
+		//killServiceThread();
+		backupContents();
+		killRenderThread();
+		
+		if (fileDialog.isPlaying()==false) {
+			PowerManagement.releaseWakeLock();
+		}
+		
+		if (fileDialog!=null) {
+			fileDialog.destroy();
+			fileDialog = null;
+		}
+		
+		/*if (Control.textOfNotification==null) {
+			Notification.notifyAppUpdate(Control.activity, " is stopped." );
+		}
+		else {
+			Notification.notifyAppUpdate(Control.activity, Control.textOfNotification );
+		}*/
+		
+		if (exitTimer!=null) {
+			exitTimer.killTimer();
+			exitTimer = null;
+		}
+		
+		
+		//System.exit(0);
+		//Net.endWifi(getContext());
+		
+		//pause();
+		
+	}	
+
+
+	@Override
+	public void onTick(Object sender) {
+		// TODO Auto-generated method stub
+		/*if (time1OfTouch!=0) {
+			time2OfTouch = System.currentTimeMillis();
+			handlingTimeOfTouch = time2OfTouch - time1OfTouch;
+			if (handlingTimeOfTouch>3000) {	
+				exitTimer.cancelTimer();
+				//closeDialog.open(this, true);	// 이렇게 하면 그려지지 않는다.
+				Control.textOfNotification = " was destroyed because of no response.";
+				Control.exit(true);				
+			}
+		}*/
+	}
+
+
+	@Override
+	public void onFinish(Object sender) {
+		// TODO Auto-generated method stub
+				
+	}
+
+
+	/*@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+		
+				if (!sized) {
+					width = getWidth();
+					height = getHeight();
+					
+					try {
+						initControls();
+						sized = true;
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						Log.e("initControls()", e.toString());
+					}			
+				}
+				
+							
+				if (sized && editRichText!=null) {
+					
+					
+				}
+				
+	}
+
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		// TODO Auto-generated method stub
+		
+	}*/
+
+
+	
+
+
+	
+
+	
+}

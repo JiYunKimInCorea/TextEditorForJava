@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">テキストエディタ</string>
+    
+    <string name="menu">メニュー</string>
+    <string name="context_menu_0">新しい文書</string>
+    <string name="context_menu_1">読み込むこと</string>
+    <string name="context_menu_2">保存する</string>
+    <string name="context_menu_3">リサイズ</string>
+    <string name="context_menu_4">最大化 / 以前の大きさ</string>
+    <string name="context_menu_5">ファイルエクスプローラ ひらく</string>
+    <string name="context_menu_6">やじるしキー 見せる</string>
+    <string name="context_menu_7">プログラムについて</string>
+    <string name="context_menu_8">プログラムを終了する</string>
+    
+    <string name="about_program">はたらき:\n - テキストエディタ\n - java editor\n - java syntax analyzer\n - terminal emulator\n - ファイルエクスプローラ\n - wifiを利用したファイル転送\n - メディア・プレーヤー\n - 録音機\n - high performance\n - low memory\n - bluetooth keyboard(hangul input:%h)\n\nProgrammed by Kim Ji Yun\nmade in world</string>
+    
+    
+    
+    
+    
+    <string name="OK">確認</string>
+    <string name="cancel">キャンセル</string>
+    
+    <string name="color_dialog">色</string>
+    <string name="connect_file_dialog">IpURL入力</string>
+    <string name="file_explorer_dialog">ファイルエクスプローラ</string>
+    <string name="font_size_dialog">フォントサイズ</string>
+    <string name="lang_dialog">言語</string>
+    <string name="message_dialog">メッセージ</string>
+    
+    <string name="font_default">基本</string>
+    <string name="font_others">その他など</string>
+        
+    <string name="file_dir_app">Appディレクトリに行く</string>
+    <string name="file_dir_root">ルートディレクトリに行く</string>
+    
+	<string name="file_func_mkdir">ディレクトリ作り</string>
+	<string name="file_func_del">削除</string>
+	<string name="file_func_ren">名前変えること</string>
+	<string name="file_func_cut">切り取り</string>
+	<string name="file_func_copy">コピー</string>
+	<string name="file_func_paste">貼る</string>
+	<string name="file_func_multiselect">多重選択</string>
+	<string name="file_func_sort">せいれつ</string>
+	<string name="file_func_properties">属性</string>
+		
+	<string name="file_media_send">ファイルを送る</string>
+	<string name="file_media_receiver">ファイルされはじめ</string>
+	<string name="file_media_music">音楽鑑賞</string>
+	<string name="file_media_video">ビデオを見ること</string>
+	<string name="file_media_record">音聲錄音</string>
+	<string name="file_media_play_record">録音再生</string>
+	<string name="file_media_sound_menu">音管理メニュー</string>
+		
+	<string name="file_sort_name_ascend">名前、昇順ソート</string>
+	<string name="file_sort_name_descend">名前、降順整列</string>
+	<string name="file_sort_time_ascend">時間、昇順ソート</string>
+	<string name="file_sort_time_descend">時間、降順整列</string>
+	
+	<string name="file_but_dir">Dir</string>
+	<string name="file_but_category">種類</string>
+	<string name="file_but_func">機能</string>
+	<string name="file_but_media">メディア</string>
+	
+	<string name="lang_chinese">漢字</string>
+    
+    <string name="load_error">読み込みエラー</string>
+    <string name="save_error">保存エラー</string>
+    <string name="save_error_read_only">読むだけ可能システム</string>
+    <string name="load_error_file_not_found">ファイル発見されていない</string>
+    <string name="outof_memory_error">メモリ不足エラー</string>
+    <string name="error">エラーが発生した</string>
+    
+    <string name="keys_keys">Keys</string>
+    <string name="keys_exc">実行</string>
+    <string name="keys_lang">言語</string>
+    
+    
+        
+
+</resources>

@@ -1,0 +1,11 @@
+
+
+
+압축하기 : tar -zcvpf - TextEditorForJava | split -b 10m - TextEditorForJava.tar.gz
+다음과 같은 파일들이 만들어진다.
+TextEditorForJava.tar.gzaa  TextEditorForJava.tar.gzab
+
+
+
+압축풀기 : cat TextEditorForJava.tar.gz* | tar -zxvpf - TextEditorForJava
+TextEditorForJava.tar.gzaa  TextEditorForJava.tar.gzab 이 분할된 압축파일들은 TextEditorForJava 디렉토리에 압축이 풀린다.

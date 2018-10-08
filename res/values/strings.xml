@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">Text Editor</string>
+    
+    <string name="menu">Menu</string>
+    <string name="context_menu_0">New Document</string>
+    <string name="context_menu_1">Load</string>
+    <string name="context_menu_2">Save</string>
+    <string name="context_menu_3">Sizable</string>
+    <string name="context_menu_4">Maximize/PrevSize</string>
+    <string name="context_menu_5">Open file explorer</string>
+    <string name="context_menu_6">Show arrow keys</string>
+    <string name="context_menu_7">About program and programer</string>
+    <string name="context_menu_8">Close</string>
+    
+    <string name="about_program">Function:\n - text editor\n - java editor\n - java syntax analyzer\n - terminal emulator\n - File explorer\n - File transmission by wifi LAN\n - media player\n - recorder\n - high performance\n - low memory\n - bluetooth keyboard(hangul input:%h)\n\nProgrammed by Kim Ji Yun\nmade in world</string>
+    
+    
+    
+    
+    <string name="OK">OK</string>
+    <string name="cancel">Cancel</string>
+    
+    <string name="color_dialog">Colors</string>
+    <string name="connect_file_dialog">Connect to peer</string>
+    <string name="file_explorer_dialog">File explorer</string>
+    <string name="font_size_dialog">Font size</string>
+    <string name="lang_dialog">Language</string>
+    <string name="message_dialog">Message</string>
+    
+    <string name="font_default">Default</string>
+    <string name="font_others">Others</string>
+        
+    <string name="file_dir_app">Go to app dir</string>
+    <string name="file_dir_root">Go to / dir</string>
+    
+	<string name="file_func_mkdir">Make dir</string>
+	<string name="file_func_del">Delete</string>
+	<string name="file_func_ren">Rename</string>
+	<string name="file_func_cut">Cut</string>
+	<string name="file_func_copy">Copy</string>
+	<string name="file_func_paste">Paste</string>
+	<string name="file_func_multiselect">MultiSelect</string>
+	<string name="file_func_sort">Sort</string>
+	<string name="file_func_properties">Properties</string>
+		
+	<string name="file_media_send">Send a file(s)</string>
+	<string name="file_media_receiver">Start receiving file(s)</string>
+	<string name="file_media_music">Play music</string>
+	<string name="file_media_video">Play video</string>
+	<string name="file_media_record">Record sound</string>
+	<string name="file_media_play_record">Play record</string>
+	<string name="file_media_sound_menu">Sound control menu</string>
+		
+	<string name="file_sort_name_ascend">Sort by name, ascending</string>
+	<string name="file_sort_name_descend">Sort by name, descending</string>
+	<string name="file_sort_time_ascend">Sort by time, ascending</string>
+	<string name="file_sort_time_descend">Sort by time, descending</string>
+	
+	<string name="file_but_dir">Dir</string>
+	<string name="file_but_category">Cat</string>
+	<string name="file_but_func">Func</string>
+	<string name="file_but_media">Media</string>
+	
+	<string name="lang_chinese">Chinese</string>
+    
+    <string name="load_error">Load error</string>
+    <string name="save_error">Save error</string>
+    <string name="save_error_read_only">Read-only file system</string>
+    <string name="load_error_file_not_found">The file not found</string>
+    <string name="outof_memory_error">Out of memory error</string>
+    <string name="error">Error occurred</string>
+    
+    <string name="keys_keys">Keys</string>
+    <string name="keys_exc">Exc</string>
+    <string name="keys_lang">Lang</string>
+    
+    
+    <string name="copy_right">I made a java compiler and so forth by myself unpaid for 10 more years\nVisit Http://blog.naver.com/jykim4685\nPlease transfer $10 to 901021-56-048577, Nonghyup bank, South Korea</string>
+
+</resources>

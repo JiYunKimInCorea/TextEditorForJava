@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=TextEditorForJava
+Comment=Java compiler
+Exec=gnome-terminal --working-directory=/home/TextEditorForJava/TextEditorForJava --command ./Launcher_TextEditorForJava_Linux.sh
+Icon=/home/TextEditorForJava/TextEditorForJava/app.ico
+Terminal=false
+Type=Application
+StartupNotify=false
+Categories=GNOME;GTK;Utility;TextEditor;Development;

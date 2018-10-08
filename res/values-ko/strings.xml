@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">텍스트에디터</string>
+    
+    <string name="menu">메뉴</string>
+    <string name="context_menu_0">새문서</string>
+    <string name="context_menu_1">읽어오기</string>
+    <string name="context_menu_2">저장하기</string>
+    <string name="context_menu_3">크기변경</string>
+    <string name="context_menu_4">최대화/이전크기</string>
+    <string name="context_menu_5">파일탐색기 열기</string>
+    <string name="context_menu_6">화살표키 보이기</string>
+    <string name="context_menu_7">프로그램에 대하여</string>
+    <string name="context_menu_8">프로그램 종료</string>
+    
+    <string name="about_program">기능:\n - 텍스트 에디터\n - 자바 에디터\n - 자바문법 분석기\n - terminal emulator\n - 파일탐색기\n - Wifi를 통한 파일전송\n - 미디어 플레이어\n - 녹음기\n - high performance\n - low memory\n - 블루투스 키보드(한글입력:%h)\n\nProgrammed by 김지윤\nmade in world</string>
+    
+    
+    
+    
+    
+    <string name="OK">확인</string>
+    <string name="cancel">취소</string>
+    
+    <string name="color_dialog">색상들</string>
+    <string name="connect_file_dialog">Ip주소입력</string>
+    <string name="file_explorer_dialog">파일 탐색기</string>
+    <string name="font_size_dialog">폰트 크기</string>
+    <string name="lang_dialog">언어</string>
+    <string name="message_dialog">메시지</string>
+    
+    <string name="font_default">기본</string>
+    <string name="font_others">기타</string>
+        
+    <string name="file_dir_app">앱 디렉토리로</string>
+    <string name="file_dir_root">루트 디렉토리로</string>
+    
+	<string name="file_func_mkdir">디렉토리생성</string>
+	<string name="file_func_del">삭제</string>
+	<string name="file_func_ren">이름바꾸기</string>
+	<string name="file_func_cut">잘라내기</string>
+	<string name="file_func_copy">복사</string>
+	<string name="file_func_paste">붙이기</string>
+	<string name="file_func_multiselect">다중선택</string>
+	<string name="file_func_sort">정렬</string>
+	<string name="file_func_properties">속성</string>
+		
+	<string name="file_media_send">파일보내기</string>
+	<string name="file_media_receiver">파일받기시작</string>
+	<string name="file_media_music">음악듣기</string>
+	<string name="file_media_video">비디오보기</string>
+	<string name="file_media_record">소리녹음</string>
+	<string name="file_media_play_record">녹음재생</string>
+	<string name="file_media_sound_menu">소리관리메뉴</string>
+		
+	<string name="file_sort_name_ascend">이름,오름차순 정렬</string>
+	<string name="file_sort_name_descend">이름,내림차순 정렬</string>
+	<string name="file_sort_time_ascend">시간,오름차순 정렬</string>
+	<string name="file_sort_time_descend">시간,내림차순 정렬</string>
+	
+	<string name="file_but_dir">Dir</string>
+	<string name="file_but_category">종류</string>
+	<string name="file_but_func">기능</string>
+	<string name="file_but_media">미디어</string>
+	
+	<string name="lang_chinese">한자</string>
+    
+    <string name="load_error">읽기 에러</string>
+    <string name="save_error">저장 에러</string>
+    <string name="save_error_read_only">읽기만 가능 시스템</string>
+    <string name="load_error_file_not_found">파일 발견되지 않음</string>
+    <string name="outof_memory_error">메모리 부족 에러</string>
+    <string name="error">에러 발생</string>
+    
+    <string name="keys_keys">자판</string>
+    <string name="keys_exc">실행</string>
+    <string name="keys_lang">언어</string>
+    
+    
+        
+
+</resources>
